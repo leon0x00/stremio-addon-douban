@@ -18,7 +18,7 @@ app.get("/manifest.json", async (c) => {
   const catalogs = await getCatalogs();
 
   return c.json({
-    id: "douban.addon",
+    id: pkg.name,
     version: pkg.version,
     name: "Douban",
     description: "Douban addon for Stremio",

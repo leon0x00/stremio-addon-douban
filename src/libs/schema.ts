@@ -56,11 +56,13 @@ export const doubanSubjectCollectionSchema = z.object({
 });
 
 export const doubanSubjectDetailSchema = z.object({
+  id: z.coerce.number(),
   type: z.enum(["movie", "tv"]),
   title: z.string(),
   original_title: z.string().nullish(),
   intro: z.string().nullish(),
   cover_url: z.string().nullish(),
+  year: z.string().nullish(),
   pic: z
     .object({
       large: z.string().nullish(),
