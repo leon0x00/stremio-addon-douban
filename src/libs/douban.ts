@@ -149,13 +149,17 @@ export class Douban {
       }
     }
     const resp = await this.http.get(`https://api.themoviedb.org/3/search/${type}`, {
+      headers: {
+        Authorization: `Bearer ${this.cloudflareBindings?.TMDB_API_KEY || process.env.TMDB_API_KEY}`,
+      },
       params: {
         query,
         year,
         language: "zh-CN",
       },
     });
-    const { results } = tmdbSearchResultSchema.parse(resp.data);
+    const { results, total_results } = tmdbSearchResultSchema.parse(resp.data);
+    console.info("🔍 TMDb Search Result", total_results, results);
 
     if (results.length === 0) {
       return null;
@@ -179,26 +183,28 @@ export class Douban {
       imdbId: null,
       tmdbId: null,
     };
-    console.group(`🔍 Douban ID => ${parmas.doubanId}`);
     // 二者有其一即可，优先使用 IMDb ID
     try {
       const detail = await this.getSubjectDetailDesc(parmas.doubanId);
       if (detail?.IMDb) {
-        console.info("🔍 Douban ID => IMDb ID", detail.IMDb);
+        console.info("🔍 Douban ID => IMDb ID", parmas.doubanId, detail.IMDb);
         result.imdbId = detail.IMDb;
       }
-    } catch (error) {}
+    } catch (error) {
+      console.error("🔍 Douban ID => IMDb ID Error", parmas.doubanId, error);
+    }
     if (!result.imdbId) {
       try {
         const tmdbId = await this.findTmdbId(parmas);
         if (tmdbId) {
-          console.info("🔍 Douban ID => TMDb ID", tmdbId);
+          console.info("🔍 Douban ID => TMDb ID", parmas.doubanId, tmdbId);
           result.tmdbId = tmdbId;
         }
-      } catch (error) {}
+      } catch (error) {
+        console.error("🔍 Douban ID => TMDb ID Error", parmas.doubanId, error);
+      }
     }
-    console.info("🔍 Douban ID => Result", result);
-    console.groupEnd();
+    console.info("🔍 Douban ID => Result", parmas.doubanId, result);
     return result;
   }
 }

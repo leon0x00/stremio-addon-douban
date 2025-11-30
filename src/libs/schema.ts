@@ -109,4 +109,5 @@ export const tmdbSearchResultSchema = z.object({
         })),
     ]),
   ),
+  total_results: z.number().nullish(),
 });
