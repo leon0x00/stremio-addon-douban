@@ -12,7 +12,6 @@
     "cheerio": "^1.1.2",
     "drizzle-orm": "^0.44.7",
     "hono": "^4.10.7",
-    "lru-cache": "^11.2.2",
     "path-to-regexp": "^8.3.0",
     "zod": "^4.1.13"
   },

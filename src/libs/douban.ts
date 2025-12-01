@@ -1,10 +1,8 @@
-import axios, { type AxiosInstance } from "axios";
+import axios, { type AxiosInstance, type AxiosRequestConfig } from "axios";
 import { load as cheerioLoad } from "cheerio";
 import { inArray, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
 import type { Context, Env } from "hono";
-import { LRUCache } from "lru-cache";
-import type { z } from "zod";
 import { type DoubanIdMapping, doubanMapping } from "../db";
 import { SECONDS_PER_DAY, SECONDS_PER_HOUR } from "./constants";
 import { doubanSubjectCollectionSchema, doubanSubjectDetailSchema, tmdbSearchResultSchema } from "./schema";
@@ -54,38 +52,29 @@ export class Douban {
     });
   }
 
-  private withFetchWithCache<T extends object>(
-    fetcher: (key: string, signal: AbortSignal) => Promise<T>,
-    options: {
-      keyPrefix: string;
-      ttl: number;
-      max?: number;
-    },
-  ) {
-    const { keyPrefix, ttl, max = 500 } = options;
-    return new LRUCache<string, T>({
-      max,
-      ttl,
-      fetchMethod: async (key, _, { signal }) => {
-        const cache = caches.default;
-        const cacheKey = new Request(`https://cache.internal/${keyPrefix}/${key}`);
-        const cachedRes = await cache.match(cacheKey);
-        if (cachedRes) {
-          console.info("⚡️ L2 Cache Hit", keyPrefix, key);
-          return cachedRes.json();
-        }
-        console.info("🐢 L2 Cache Miss", keyPrefix, key);
-        const data = await fetcher(key, signal);
-        const maxAge = ttl / 1000;
-        const response = new Response(JSON.stringify(data), {
-          headers: {
-            "Cache-Control": `public, max-age=${maxAge}, s-maxage=${maxAge}`,
-          },
-        });
-        this.context.executionCtx.waitUntil(cache.put(cacheKey, response));
-        return data;
-      },
-    });
+  private async fetch<T>(config: AxiosRequestConfig & { cache?: { key: string; ttl: number } }) {
+    const cache = caches.default;
+    const cacheKey = new Request(`https://cache.internal/${config.cache?.key}`);
+
+    if (config.cache) {
+      const cachedRes = await cache.match(cacheKey);
+      if (cachedRes) {
+        console.info("⚡️ Cache Hit", config.cache.key);
+        return cachedRes.json() as Promise<T>;
+      }
+      console.info("🐢 Cache Miss", config.cache.key);
+    }
+
+    const resp = await this.http<T>(config);
+    if (config.cache) {
+      const response = new Response(JSON.stringify(resp.data as T), {
+        headers: {
+          "Cache-Control": `public, max-age=${config.cache.ttl / 1000}, s-maxage=${config.cache.ttl / 1000}`,
+        },
+      });
+      this.context.executionCtx.waitUntil(cache.put(cacheKey, response));
+    }
+    return resp.data;
   }
 
   initialize(context: Context<Env>) {
@@ -97,67 +86,52 @@ export class Douban {
   }
 
   //#region Subject Collection
-  private getSubjectCollectionCache = this.withFetchWithCache<z.output<typeof doubanSubjectCollectionSchema>>(
-    async (key, signal) => {
-      const [id, skip] = key.split(":");
-      const resp = await this.http.get(`/subject_collection/${id}/items`, {
-        params: {
-          start: skip,
-          count: Douban.PAGE_SIZE,
-        },
-        signal,
-      });
-      return doubanSubjectCollectionSchema.parse(resp.data);
-    },
-    {
-      keyPrefix: "subject_collection",
-      max: 500,
-      ttl: 1000 * SECONDS_PER_HOUR * 2,
-    },
-  );
-  getSubjectCollection(collectionId: string, skip: string | number = 0) {
-    return this.getSubjectCollectionCache.fetch(`${collectionId}:${skip}`);
+  async getSubjectCollection(collectionId: string, skip: string | number = 0) {
+    const data = await this.fetch({
+      url: `/subject_collection/${collectionId}/items`,
+      params: {
+        start: skip,
+        count: Douban.PAGE_SIZE,
+      },
+      cache: {
+        key: `subject_collection:${collectionId}:${skip}`,
+        ttl: 1000 * SECONDS_PER_HOUR * 2,
+      },
+    });
+    return doubanSubjectCollectionSchema.parse(data);
   }
   //#endregion
 
   //#region Subject Detail
-  private getSubjectDetailCache = this.withFetchWithCache<z.output<typeof doubanSubjectDetailSchema>>(
-    async (key, signal) => {
-      const resp = await this.http.get(`/subject/${key}`, { signal });
-      return doubanSubjectDetailSchema.parse(resp.data);
-    },
-    {
-      keyPrefix: "subject_detail",
-      max: 500,
-      ttl: 1000 * SECONDS_PER_DAY,
-    },
-  );
-  getSubjectDetail(subjectId: string | number) {
-    return this.getSubjectDetailCache.fetch(`${subjectId}`);
+  async getSubjectDetail(subjectId: string | number) {
+    const data = await this.fetch({
+      url: `/subject/${subjectId}`,
+      cache: {
+        key: `subject_detail:${subjectId}`,
+        ttl: 1000 * SECONDS_PER_DAY,
+      },
+    });
+    return doubanSubjectDetailSchema.parse(data);
   }
   //#endregion
 
   //#region Subject Detail Desc
-  private getSubjectDetailDescCache = this.withFetchWithCache<Record<string, string>>(
-    async (key, signal) => {
-      const resp = await this.http.get<{ html: string }>(`/subject/${key}/desc`, { signal });
-      const $ = cheerioLoad(resp.data.html);
-      const info = Array.from($(".subject-desc table").find("tr")).map((el) => {
-        const $el = $(el);
-        const key = $el.find("td:first-child").text().trim();
-        const value = $el.find("td:last-child").text().trim();
-        return [key, value];
-      });
-      return Object.fromEntries(info);
-    },
-    {
-      keyPrefix: "subject_detail_desc",
-      max: 500,
-      ttl: 1000 * SECONDS_PER_DAY,
-    },
-  );
-  getSubjectDetailDesc(subjectId: string | number) {
-    return this.getSubjectDetailDescCache.fetch(subjectId.toString());
+  async getSubjectDetailDesc(subjectId: string | number) {
+    const data = await this.fetch<{ html: string }>({
+      url: `/subject/${subjectId}/desc`,
+      cache: {
+        key: `subject_detail_desc:${subjectId}`,
+        ttl: 1000 * SECONDS_PER_DAY,
+      },
+    });
+    const $ = cheerioLoad(data.html);
+    const info = Array.from($(".subject-desc table").find("tr")).map((el) => {
+      const $el = $(el);
+      const key = $el.find("td:first-child").text().trim();
+      const value = $el.find("td:last-child").text().trim();
+      return [key, value];
+    });
+    return Object.fromEntries(info);
   }
   //#endregion
 
