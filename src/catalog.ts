@@ -4,6 +4,7 @@ import type { DoubanIdMapping } from "./db";
 import { SECONDS_PER_DAY, SECONDS_PER_WEEK } from "./libs/constants";
 import { Douban, douban } from "./libs/douban";
 import { matchResourceRoute } from "./libs/router";
+import { isForwardUserAgent } from "./libs/utils";
 
 const generateId = (doubanId: number, params?: Omit<DoubanIdMapping, "doubanId">) => {
   if (params?.imdbId) {
@@ -62,25 +63,32 @@ catalogRouter.get("*", async (c) => {
   // 后台异步写入数据库，不阻塞响应
   c.executionCtx.waitUntil(douban.persistDoubanIdMapping(newMappings));
 
+  const isInForward = isForwardUserAgent(c);
+
   // 构建响应
   const metas = items.map((item) => {
     const mapping = mappingCache.get(item.id);
     const { imdbId, tmdbId } = mapping ?? {};
-
-    return {
+    const result: MetaPreview & { [key: string]: any } = {
       id: generateId(item.id, mapping),
       name: item.title,
       type: item.type === "tv" ? "series" : "movie",
       poster: item.cover ?? "",
       description: item.description ?? undefined,
       background: item.photos?.[0],
+    };
+    if (imdbId) {
+      result.imdb_id = imdbId;
+    }
+    if (tmdbId) {
+      if (isInForward) {
+        result.tmdb_id = `tmdb:${tmdbId}`;
+      } else {
+        result.tmdbId = tmdbId;
+      }
+    }
 
-      // 协议外的字段，但是播放器会识别，不过不确实字段是蛇形还是驼峰，这里都返回
-      imdb_id: imdbId,
-      imdbId,
-      tmdb_id: tmdbId,
-      tmdbId,
-    } as MetaPreview;
+    return result;
   });
 
   return c.json({

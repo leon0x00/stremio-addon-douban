@@ -5,6 +5,7 @@ import { logger } from "hono/logger";
 import pkg from "../package.json" with { type: "json" };
 import { app } from "./app";
 import { catalogRouter, getCatalogs } from "./catalog";
+import { idPrefixes, metaRouter } from "./meta";
 
 // app.use(
 //   "*",
@@ -31,11 +32,13 @@ app.get("/manifest.json", async (c) => {
     description: "Douban addon for Stremio",
     logo: "https://img1.doubanio.com/f/frodo/144e6fb7d96701944e7dbb1a9bad51bdb1debe29/pics/app/logo.png",
     types: ["movie", "series"],
-    resources: ["catalog"],
+    resources: ["catalog", "meta"],
     catalogs,
+    idPrefixes,
   } satisfies Manifest);
 });
 
 app.route("/catalog", catalogRouter);
+app.route("/meta", metaRouter);
 
 export default app;

@@ -1,6 +1,6 @@
 import { match, type ParamData, type Path } from "path-to-regexp";
 
-function matchRoute<P extends ParamData>(path: Path | Path[], pathname: string) {
+export function matchRoute<P extends ParamData>(path: Path | Path[], pathname: string) {
   const matcher = match<P>(path);
   const matches = matcher(pathname);
   if (matches) {

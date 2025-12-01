@@ -3,6 +3,7 @@ import { load as cheerioLoad } from "cheerio";
 import { inArray, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
 import type { Context, Env } from "hono";
+import z from "zod";
 import { type DoubanIdMapping, doubanMapping } from "../db";
 import { SECONDS_PER_DAY, SECONDS_PER_HOUR } from "./constants";
 import { doubanSubjectCollectionSchema, doubanSubjectDetailSchema, tmdbSearchResultSchema } from "./schema";
@@ -81,7 +82,7 @@ export class Douban {
     this.context = context;
   }
 
-  private get db() {
+  get db() {
     return drizzle(this.context.env.stremio_addon_douban);
   }
 
@@ -135,6 +136,30 @@ export class Douban {
   }
   //#endregion
 
+  async getDoubanIdByImdbId(imdbId: string) {
+    const resp = await this.request<{ id: string }>({
+      url: `https://api.douban.com/v2/movie/imdb/${imdbId}`,
+      method: "POST",
+      data: {
+        apikey: this.context.env.DOUBAN_API_KEY || process.env.DOUBAN_API_KEY,
+      },
+      cache: {
+        key: `douban_id_by_imdb_id:${imdbId}`,
+        ttl: 1000 * SECONDS_PER_DAY,
+      },
+    });
+    const doubanId = z.coerce.number().parse(resp.id?.split("/")?.pop());
+    try {
+      this.context.executionCtx.waitUntil(
+        this.db.insert(doubanMapping).values({ imdbId, doubanId }).onConflictDoUpdate({
+          target: doubanMapping.doubanId,
+          set: { imdbId },
+        }),
+      );
+    } catch (error) {}
+    return doubanId;
+  }
+
   async fetchDoubanIdMapping(doubanIds: number[]) {
     const rows = await this.db.select().from(doubanMapping).where(inArray(doubanMapping.doubanId, doubanIds));
     const mappingCache = new Map<number, Omit<DoubanIdMapping, "doubanId">>();
@@ -150,10 +175,11 @@ export class Douban {
   }
 
   async persistDoubanIdMapping(mappings: DoubanIdMapping[]) {
-    if (mappings.length === 0) return;
+    const data = mappings.filter((item) => item.imdbId || item.tmdbId);
+    if (data.length === 0) return;
     await this.db
       .insert(doubanMapping)
-      .values(mappings)
+      .values(data)
       .onConflictDoUpdate({
         target: doubanMapping.doubanId,
         set: { imdbId: sql`excluded.imdb_id`, tmdbId: sql`excluded.tmdb_id` },
