@@ -1,5 +1,5 @@
 import type { Manifest } from "@stremio-addon/sdk";
-// import { cache } from "hono/cache";
+import { cache } from "hono/cache";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import pkg from "../package.json" with { type: "json" };
@@ -7,13 +7,13 @@ import { app } from "./app";
 import { catalogRouter, getCatalogs } from "./catalog";
 import { idPrefixes, metaRouter } from "./meta";
 
-// app.use(
-//   "*",
-//   cache({
-//     cacheName: (c) => c.req.path,
-//     cacheControl: "max-age=3600",
-//   }),
-// );
+app.use(
+  "*",
+  cache({
+    cacheName: (c) => c.req.path,
+    cacheControl: "max-age=3600",
+  }),
+);
 app.use("*", cors());
 app.use(logger((...args) => console.info(`[${new Date().toISOString()}]`, ...args)));
 
