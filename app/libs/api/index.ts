@@ -130,7 +130,10 @@ class API extends BaseAPI {
       return null;
     }
     const traktType = type === "tv" ? "show" : "movie";
-    const data = await this.traktAPI.search(traktType, title).catch(() => []);
+    const data = await this.traktAPI.search(traktType, title).catch((err) => {
+      console.error("❌ Trakt search title error", err);
+      return [];
+    });
     if (data.length === 1) {
       return this.traktAPI.getSearchResultField(data[0], "ids");
     }
