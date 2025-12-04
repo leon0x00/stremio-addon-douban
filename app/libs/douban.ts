@@ -186,8 +186,10 @@ export class Douban {
     return { mappingCache, missingIds };
   }
 
-  async persistDoubanIdMapping(mappings: DoubanIdMapping[]) {
-    const data = mappings.filter((item) => item.imdbId || item.tmdbId || item.traktId);
+  async persistDoubanIdMapping(mappings: (DoubanIdMapping | null)[]) {
+    const data = mappings.filter(
+      (item): item is DoubanIdMapping => !!item && !!(item.imdbId || item.tmdbId || item.traktId),
+    );
     if (data.length === 0) return;
     console.log("🗄️ Updating douban id mapping", data);
     await this.db
@@ -224,7 +226,15 @@ export class Douban {
   }
 
   private async findIdByTraktSearch(params: FindTmdbIdParams) {
-    const { type, title } = params;
+    const { type, doubanId } = params;
+    let { title } = params;
+    if (!title && doubanId) {
+      const detail = await this.getSubjectDetail(doubanId);
+      title = detail.title;
+    }
+    if (!title) {
+      return null;
+    }
     const traktType = type === "tv" ? "show" : "movie";
     const resp = await this.request<SearchResultResponse[]>({
       baseURL: TraktBaseUrl.production,
@@ -239,16 +249,38 @@ export class Douban {
     if (data.length === 1) {
       return this.getTraktSearchField(data[0], "ids");
     }
-    const cleanTitle = this.cleanTraktSearchTitle(title);
-    const titleSet = new Set([title, cleanTitle].filter(Boolean));
+    const titleSet = new Set([title, this.cleanTraktSearchTitle(title)].filter(Boolean));
     const nameMatches = data.filter((result) => {
-      const traktTitle = this.getTraktSearchField(result, "title");
-      const traktOriginalTitle = this.getTraktSearchField(result, "original_title");
+      const traktTitle = this.getTraktSearchField(result, "title") ?? "";
+      const traktOriginalTitle = this.getTraktSearchField(result, "original_title") ?? "";
       return titleSet.has(traktTitle) || titleSet.has(traktOriginalTitle);
     });
 
     if (nameMatches.length === 1) {
       return this.getTraktSearchField(nameMatches[0], "ids");
+    }
+    if (nameMatches.length > 1) {
+      console.warn(
+        "🔍 Trakt search title matches multiple results",
+        title,
+        nameMatches.map((result) => this.getTraktSearchField(result, "title")),
+      );
+    }
+    return null;
+  }
+
+  private async findIdByImdbId(imdbId: string) {
+    const resp = await this.request({
+      baseURL: TraktBaseUrl.production,
+      url: `/search/imdb/${imdbId}`,
+      cache: { key: `trakt:search:imdb:${imdbId}`, ttl: 1000 * SECONDS_PER_DAY },
+    });
+    const data = z.array(searchResultResponseSchema).parse(resp);
+    if (data.length === 0) {
+      return null;
+    }
+    if (data.length === 1) {
+      return this.getTraktSearchField(data[0], "ids");
     }
     return null;
   }
@@ -267,6 +299,14 @@ export class Douban {
       if (detail?.IMDb) {
         console.info("🔍 Douban ID => IMDb ID", params.doubanId, detail.IMDb);
         result.imdbId = detail.IMDb;
+        try {
+          const traktIds = await this.findIdByImdbId(detail.IMDb);
+          if (traktIds) {
+            result.traktId = traktIds.trakt ?? null;
+            result.tmdbId = traktIds.tmdb ?? null;
+            result.imdbId = traktIds.imdb ?? null;
+          }
+        } catch (error) {}
       }
     } catch (error) {
       console.error("🔍 Douban ID => IMDb ID Error", params.doubanId, error);

@@ -1,11 +1,12 @@
-import type { ManifestCatalog, MetaPreview, WithCache } from "@stremio-addon/sdk";
+import type { AddonBuilder, ManifestCatalog, MetaPreview } from "@stremio-addon/sdk";
 import { type Context, type Env, Hono } from "hono";
-
 import { SECONDS_PER_DAY, SECONDS_PER_WEEK } from "@/libs/constants";
 import { Douban, douban } from "@/libs/douban";
 import { matchResourceRoute } from "@/libs/router";
 import { isForwardUserAgent } from "@/libs/utils";
 import { generateId } from "./utils";
+
+type CatalogResponse = Awaited<ReturnType<Parameters<AddonBuilder["defineCatalogHandler"]>[0]>>;
 
 const collectionConfigs: Array<ManifestCatalog & { total: number | "fetch" }> = [
   { id: "movie_hot_gaia", name: "豆瓣热门电影", type: "movie", total: "fetch" },
@@ -29,8 +30,9 @@ export const catalogRouter = new Hono<Env>();
 
 catalogRouter.get("*", async (c) => {
   const [matched, params] = matchResourceRoute(c.req.path);
+
   if (!matched || !collectionIds.includes(params.id)) {
-    return c.json({ error: "Not found" }, 404);
+    return c.notFound();
   }
 
   douban.initialize(c);
@@ -39,32 +41,37 @@ catalogRouter.get("*", async (c) => {
   const skip = params.extra?.skip ?? c.req.query("skip") ?? 0;
   const collectionData = await douban.getSubjectCollection(params.id, skip);
   if (!collectionData) {
-    return c.json({ error: "Not found" }, 404);
+    return c.notFound();
   }
 
   const items = collectionData.subject_collection_items;
   if (items.length === 0) {
-    return c.json({ metas: [] } satisfies WithCache<{ metas: MetaPreview[] }>);
+    return c.json({ metas: [] } satisfies CatalogResponse);
   }
 
-  const dataMap = new Map(items.map((item) => [item.id, item]));
-  const doubanIds = Array.from(dataMap.keys());
+  const collectionMap = new Map(items.map((item) => [item.id, item]));
+  const doubanIds = Array.from(collectionMap.keys());
   const { mappingCache, missingIds } = await douban.fetchDoubanIdMapping(doubanIds);
 
   const newMappings = await Promise.all(
     missingIds.map(async (doubanId) => {
-      const item = dataMap.get(doubanId)!;
+      const item = collectionMap.get(doubanId);
+      if (!item) {
+        return null;
+      }
       return douban.findExternalId({
         doubanId,
-        type: item?.type,
-        title: item?.title ?? undefined,
+        type: item.type,
+        title: item.title,
       });
     }),
   );
 
   // 更新本地缓存
   for (const item of newMappings) {
-    mappingCache.set(item.doubanId, item);
+    if (item) {
+      mappingCache.set(item.doubanId, item);
+    }
   }
 
   // 后台异步写入数据库，不阻塞响应
@@ -103,7 +110,7 @@ catalogRouter.get("*", async (c) => {
     cacheMaxAge: SECONDS_PER_DAY,
     staleRevalidate: SECONDS_PER_WEEK,
     staleError: SECONDS_PER_WEEK,
-  } satisfies WithCache<{ metas: MetaPreview[] }>);
+  } satisfies CatalogResponse);
 });
 
 export default catalogRouter;
