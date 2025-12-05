@@ -35,14 +35,15 @@ export const POST = createRoute(async (c) => {
     tmdbId: form.get("tmdbId"),
     imdbId: form.get("imdbId"),
     traktId: form.get("traktId"),
+    calibrated: form.get("calibrated") === "on",
   });
   if (!result.success) {
     return c.json({ error: z.prettifyError(result.error) }, 400);
   }
-  const { tmdbId, imdbId, traktId } = result.data;
+  const { tmdbId, imdbId, traktId, calibrated } = result.data;
   await api.db
     .update(doubanMapping)
-    .set({ tmdbId, imdbId, traktId })
+    .set({ tmdbId, imdbId, traktId, calibrated })
     .where(eq(doubanMapping.doubanId, Number.parseInt(doubanId, 10)));
   return c.redirect("/dash/tidy-up");
 });
@@ -367,6 +368,10 @@ export default createRoute(async (c) => {
                     placeholder="请输入 IMDb ID (如 tt1234567)"
                   />
                   <Input name="traktId" label="Trakt ID" value={idMapping?.traktId} placeholder="请输入 Trakt ID" />
+                  <label>
+                    <input type="checkbox" switch checked={idMapping?.calibrated ?? false} />
+                    已校准
+                  </label>
                 </CardContent>
                 <CardFooter className="justify-end gap-3">
                   <a href="/dash/tidy-up">
