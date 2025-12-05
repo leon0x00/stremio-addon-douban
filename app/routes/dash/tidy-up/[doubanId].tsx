@@ -64,16 +64,7 @@ export default createRoute(async (c) => {
     .search(subject.type === "tv" ? "tv" : "movie", { query: subject.title, year: subject.year ?? undefined })
     .catch(() => null);
 
-  let doubanCoverUrl = subject.cover_url || subject.pic?.large || subject.pic?.normal || "";
-  if (doubanCoverUrl) {
-    const arrayBuffer = await fetch(doubanCoverUrl, {
-      headers: {
-        Referer: `https://movie.douban.com/subject/${doubanId}/`,
-        "User-Agent": "Mozilla/5.0",
-      },
-    }).then((res) => res.arrayBuffer());
-    doubanCoverUrl = `data:image/jpeg;base64,${Buffer.from(arrayBuffer).toString("base64")}`;
-  }
+  const doubanCoverUrl = subject.cover_url || subject.pic?.large || subject.pic?.normal || "";
 
   const traktResults = await api.traktAPI.search(subject.type === "tv" ? "show" : "movie", subject.title);
 
@@ -117,6 +108,8 @@ export default createRoute(async (c) => {
                       <img
                         src={doubanCoverUrl}
                         alt={subject.title}
+                        referrerpolicy="no-referrer"
+                        loading="lazy"
                         className="h-72 w-48 object-cover transition-transform duration-300 hover:scale-105"
                       />
                     </div>
