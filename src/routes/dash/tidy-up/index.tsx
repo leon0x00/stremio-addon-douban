@@ -14,8 +14,6 @@ export const tidyUpRoute = new Hono<Env>();
 tidyUpRoute.route("/", tidyUpDetailRoute);
 
 tidyUpRoute.get("/", async (c) => {
-  api.initialize(c.env, c.executionCtx);
-
   const data = await api.db.select().from(doubanMapping).where(isNull(doubanMapping.tmdbId));
 
   const withImdbCount = data.filter((item) => item.imdbId).length;

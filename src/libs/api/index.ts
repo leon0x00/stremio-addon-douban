@@ -1,5 +1,4 @@
 import { inArray, isNull, ne, or, sql } from "drizzle-orm";
-import type { ExecutionContext } from "hono";
 import { z } from "zod/v4";
 import { type DoubanIdMapping, doubanMapping, doubanMappingSchema } from "@/db";
 import { BaseAPI } from "./base";
@@ -25,14 +24,6 @@ class API extends BaseAPI {
   imdbAPI = new ImdbAPI();
 
   tmdbAPI = new TmdbAPI();
-
-  initialize(env: CloudflareBindings, ctx: ExecutionContext) {
-    super.initialize(env, ctx);
-    this.doubanAPI.initialize(env, ctx);
-    this.traktAPI.initialize(env, ctx);
-    this.imdbAPI.initialize(env, ctx);
-    this.tmdbAPI.initialize(env, ctx);
-  }
 
   async fetchIdMapping(doubanIds: number[]) {
     const rows = await this.db.select().from(doubanMapping).where(inArray(doubanMapping.doubanId, doubanIds));

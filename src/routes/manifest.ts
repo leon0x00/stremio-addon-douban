@@ -16,7 +16,7 @@ manifestRoute.get("/", async (c) => {
   if (!config) {
     return c.notFound();
   }
-  const catalogs = await getCatalogs(c, config.catalogIds);
+  const catalogs = await getCatalogs(config.catalogIds);
   return c.json({
     id: `${pkg.name}.${configId}`,
     version: pkg.version,

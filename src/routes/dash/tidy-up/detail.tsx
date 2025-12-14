@@ -17,7 +17,6 @@ tidyUpDetailRoute.post("/:doubanId", async (c) => {
   if (!doubanId) {
     return c.notFound();
   }
-  api.initialize(c.env, c.executionCtx);
 
   const form = await c.req.formData();
 
@@ -48,7 +47,6 @@ tidyUpDetailRoute.get("/:doubanId", async (c) => {
   if (!doubanId) {
     return c.notFound();
   }
-  api.initialize(c.env, c.executionCtx);
 
   const [subject, idMapping] = await Promise.all([
     api.doubanAPI.getSubjectDetail(doubanId),

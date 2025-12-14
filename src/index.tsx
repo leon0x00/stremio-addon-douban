@@ -1,9 +1,12 @@
 import { and, isNull, ne, or } from "drizzle-orm";
 import { Hono } from "hono";
+import { contextStorage } from "hono/context-storage";
 import { cors } from "hono/cors";
+import { logger } from "hono/logger";
 import type { z } from "zod/v4";
 import { type DoubanIdMapping, doubanMapping } from "@/db";
 import { api, type doubanSubjectDetailSchema } from "@/libs/api";
+import { rateLimitMiddleware } from "./libs/middleware";
 import { catalogRoute } from "./routes/catalog";
 import { configureRoute } from "./routes/configure";
 import { dashRoute } from "./routes/dash";
@@ -12,7 +15,10 @@ import { metaRoute } from "./routes/meta";
 
 const app = new Hono();
 
+app.use(logger());
 app.use(cors());
+app.use(rateLimitMiddleware);
+app.use(contextStorage());
 
 app.get("/", (c) => c.redirect("/configure"));
 
@@ -30,8 +36,6 @@ export default {
   fetch: app.fetch,
 
   async scheduled(_controller: ScheduledController, env: CloudflareBindings, ctx: ExecutionContext) {
-    api.initialize(env, ctx);
-
     const data = await api.db
       .select()
       .from(doubanMapping)

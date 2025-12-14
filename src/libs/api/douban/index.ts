@@ -23,10 +23,14 @@ export class DoubanAPI extends BaseAPI {
       const finalUri = axios.getUri(config);
       if (finalUri.startsWith("https://frodo.douban.com/")) {
         config.params ||= {};
-        config.params.apiKey = this.env.DOUBAN_API_KEY || process.env.DOUBAN_API_KEY;
+        config.params.apiKey = this.apiKey;
       }
       return config;
     });
+  }
+
+  private get apiKey() {
+    return this.context.env.DOUBAN_API_KEY || process.env.DOUBAN_API_KEY;
   }
 
   async getSubjectCollection(collectionId: string, skip: string | number = 0) {
@@ -78,7 +82,7 @@ export class DoubanAPI extends BaseAPI {
       url: `https://api.douban.com/v2/movie/imdb/${imdbId}`,
       method: "POST",
       data: {
-        apikey: this.env.DOUBAN_API_KEY || process.env.DOUBAN_API_KEY,
+        apikey: this.apiKey,
       },
       cache: {
         key: `douban_id_by_imdb_id:${imdbId}`,
@@ -87,7 +91,7 @@ export class DoubanAPI extends BaseAPI {
     });
     const doubanId = z.coerce.number().parse(resp.id?.split("/")?.pop());
     try {
-      this.context.waitUntil(
+      this.context.executionCtx.waitUntil(
         this.db
           .insert(doubanMapping)
           .values({ imdbId, doubanId })

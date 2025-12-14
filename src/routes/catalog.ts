@@ -19,8 +19,6 @@ catalogRoute.get("*", async (c) => {
     return c.notFound();
   }
 
-  api.initialize(c.env, c.executionCtx);
-
   const getExtra = getExtraFactory(c, params.extra);
 
   // 获取豆瓣合集数据

@@ -5,7 +5,7 @@ export class TmdbAPI extends BaseAPI {
   constructor() {
     super({ baseURL: "https://api.themoviedb.org/3" });
     this.axios.interceptors.request.use((config) => {
-      config.headers.set("Authorization", `Bearer ${this.env.TMDB_API_KEY || process.env.TMDB_API_KEY}`);
+      config.headers.set("Authorization", `Bearer ${this.context.env.TMDB_API_KEY || process.env.TMDB_API_KEY}`);
       return config;
     });
   }

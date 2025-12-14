@@ -30,7 +30,7 @@ export class TraktAPI extends BaseAPI {
     super({ baseURL: TraktBaseUrl.production });
     this.axios.interceptors.request.use((config) => {
       config.headers.set("trakt-api-version", "2");
-      config.headers.set("trakt-api-key", this.env.TRAKT_CLIENT_ID || process.env.TRAKT_CLIENT_ID);
+      config.headers.set("trakt-api-key", this.context.env.TRAKT_CLIENT_ID || process.env.TRAKT_CLIENT_ID);
       config.headers.set("User-Agent", `${pkg.name}/${pkg.version}`);
       return config;
     });
