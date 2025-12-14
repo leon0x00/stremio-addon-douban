@@ -1,25 +1,29 @@
 import { z } from "zod/v4";
 
+export const doubanSubjectCollectionCategorySchema = z
+  .object({
+    category: z.string(),
+    items: z
+      .array(
+        z.object({
+          current: z.boolean(),
+          id: z.string(),
+          name: z.string(),
+        }),
+      )
+      .nullish(),
+  })
+  .nullish()
+  .catch(() => null);
+
+export type DoubanSubjectCollectionCategory = z.output<typeof doubanSubjectCollectionCategorySchema>;
+
 export const doubanSubjectCollectionInfoSchema = z.object({
   category_tabs: z
-    .array(
-      z.object({
-        category: z.string(),
-        items: z
-          .array(
-            z.object({
-              current: z.boolean(),
-              id: z.string(),
-              name: z.string(),
-            }),
-          )
-          .nullish(),
-      }),
-    )
-    .nullish(),
+    .array(doubanSubjectCollectionCategorySchema)
+    .nullish()
+    .catch(() => []),
 });
-
-export type DoubanSubjectCollectionInfo = z.output<typeof doubanSubjectCollectionInfoSchema>;
 
 const doubanSubjectCollectionItemSchema = z
   .object({

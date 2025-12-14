@@ -6,7 +6,8 @@ import { doubanMapping } from "@/db";
 import { SECONDS_PER_DAY, SECONDS_PER_HOUR, SECONDS_PER_WEEK } from "../../constants";
 import { BaseAPI } from "../base";
 import {
-  type DoubanSubjectCollectionInfo,
+  type DoubanSubjectCollectionCategory,
+  doubanSubjectCollectionCategorySchema,
   doubanSubjectCollectionInfoSchema,
   doubanSubjectCollectionSchema,
   doubanSubjectDetailSchema,
@@ -53,12 +54,14 @@ export class DoubanAPI extends BaseAPI {
   }
 
   async getSubjectCollectionCategory(collectionId: string) {
-    type Category = NonNullable<DoubanSubjectCollectionInfo["category_tabs"]>[number];
     const generateCacheKey = (cid: string) => `subject_collection_category:${cid}`;
-    const cached = await this.context.env.KV.get<Category>(generateCacheKey(collectionId), "json");
+    const cached = await this.context.env.KV.get<DoubanSubjectCollectionCategory>(
+      generateCacheKey(collectionId),
+      "json",
+    );
     if (cached) {
       console.log("⚡️ KV Cache Hit", collectionId);
-      return cached;
+      return doubanSubjectCollectionCategorySchema.parse(cached);
     }
     console.log("🐢 KV Cache Miss", collectionId);
 
@@ -69,9 +72,9 @@ export class DoubanAPI extends BaseAPI {
       return null;
     }
 
-    let category: Category | null = null;
+    let category: DoubanSubjectCollectionCategory = null;
     for (const tab of tabs) {
-      const cid = tab.items?.[0].id;
+      const cid = tab?.items?.[0]?.id;
       if (cid) {
         this.context.ctx.waitUntil(
           this.context.env.KV.put(generateCacheKey(cid), JSON.stringify(tab), {
@@ -79,7 +82,7 @@ export class DoubanAPI extends BaseAPI {
           }),
         );
       }
-      if (tab.items?.find((item) => item.current)) {
+      if (tab?.items?.find((item) => item.current)) {
         category = tab;
         break;
       }
