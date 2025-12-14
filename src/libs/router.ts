@@ -16,11 +16,12 @@ export const parseExtra = (value: string | undefined) => {
 
 export const matchResourceRoute = (pathname: string) => {
   const [matched, result] = matchRoute<{
+    config: string;
     resource: string;
     type: string;
     id: string;
     extra?: string;
-  }>("/:resource/:type/:id{/:extra}.json", pathname);
+  }>("/:config/:resource/:type/:id{/:extra}.json", pathname);
   if (!matched) return [false, null] as const;
 
   return [

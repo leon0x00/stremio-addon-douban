@@ -17,7 +17,6 @@ export const encodeConfig = (config?: ConfigInput | null): string => {
     },
   });
   const result = compressed.toString("base64url");
-  console.log("encodeConfig", stringified, result);
   return result;
 };
 
