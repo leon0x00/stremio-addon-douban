@@ -45,7 +45,7 @@ export const MOVIE_RANK_ID_MAP = {
   评分最高短片: "film_genre_36",
 };
 
-export const SERIES_RANK_ID_MAP = {
+export const TV_RANK_ID_MAP = {
   近期热门大陆剧: "EC74443FY",
   高分经典大陆剧: "ECT45KVZI",
   近期热门美剧: "ECFA5DI7Q",
@@ -63,6 +63,16 @@ export const SERIES_RANK_ID_MAP = {
   高分动画剧集: "ECR4CRXHA",
 };
 
+export enum RankListType {
+  Movie = "movie_rank_list",
+  TV = "tv_rank_list",
+}
+
+export const RANK_ID_MAP: Record<RankListType, Record<string, string>> = {
+  [RankListType.Movie]: MOVIE_RANK_ID_MAP,
+  [RankListType.TV]: TV_RANK_ID_MAP,
+};
+
 export const collectionConfigs: ManifestCatalog[] = [
   { id: "movie_hot_gaia", name: "豆瓣热门电影", type: "movie" },
   { id: "movie_weekly_best", name: "一周口碑电影榜", type: "movie" },
@@ -70,7 +80,7 @@ export const collectionConfigs: ManifestCatalog[] = [
   { id: "movie_top250", name: "豆瓣电影 Top250", type: "movie" },
   { id: "movie_showing", name: "影院热映", type: "movie" },
   {
-    id: "movie_rank_list",
+    id: RankListType.Movie,
     name: "豆瓣电影排行榜",
     type: "movie",
     extra: [{ name: "genre", options: Object.keys(MOVIE_RANK_ID_MAP), isRequired: true, optionsLimit: 1 }],
@@ -85,9 +95,9 @@ export const collectionConfigs: ManifestCatalog[] = [
   { id: "show_chinese_best_weekly", name: "国内口碑综艺榜", type: "series" },
   { id: "show_global_best_weekly", name: "国外口碑综艺榜", type: "series" },
   {
-    id: "tv_rank_list",
+    id: RankListType.TV,
     name: "豆瓣剧集排行榜",
     type: "series",
-    extra: [{ name: "genre", options: Object.keys(SERIES_RANK_ID_MAP), isRequired: true, optionsLimit: 1 }],
+    extra: [{ name: "genre", options: Object.keys(TV_RANK_ID_MAP), isRequired: true, optionsLimit: 1 }],
   },
 ];

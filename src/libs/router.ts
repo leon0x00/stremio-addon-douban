@@ -1,3 +1,4 @@
+import type { Context, Env } from "hono";
 import { match, type ParamData, type Path } from "path-to-regexp";
 
 export function matchRoute<P extends ParamData>(path: Path | Path[], pathname: string) {
@@ -31,4 +32,10 @@ export const matchResourceRoute = (pathname: string) => {
       extra: parseExtra(result.extra),
     },
   ] as const;
+};
+
+export const getExtraFactory = (c: Context<Env>, extra: Record<string, string>) => {
+  return (key: string) => {
+    return extra[key] ?? c.req.query(key);
+  };
 };
