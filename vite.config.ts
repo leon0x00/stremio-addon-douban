@@ -8,8 +8,6 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "src"),
-      react: "@hono/react-compat",
-      "react-dom": "@hono/react-compat",
     },
   },
   optimizeDeps: {
