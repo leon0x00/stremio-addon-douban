@@ -35,25 +35,28 @@ configureRoute.get(
 configureRoute.post("/", async (c) => {
   const formData = await c.req.formData();
   const catalogIds = formData.get("catalogIds")?.toString().split(",").filter(Boolean) ?? [];
-  const config = encodeConfig({ catalogIds });
+  const imageProxy = formData.get("imageProxy")?.toString() ?? "none";
+  const config = encodeConfig({ catalogIds, imageProxy });
   setCookie(c, "config", config);
   return c.redirect(`/${config}/configure`);
 });
 
 configureRoute.get("/", (c) => {
   const defaultConfig = c.req.param("config") ?? getCookie(c, "config");
-  const config = decodeConfig(defaultConfig ?? "");
-  const initialSelectedIds = config.catalogIds || DEFAULT_COLLECTION_IDS;
+  const rawConfig = decodeConfig(defaultConfig ?? "");
+  const initialSelectedIds = rawConfig.catalogIds || DEFAULT_COLLECTION_IDS;
 
-  const manifestUrl = new URL(c.req.url);
-  manifestUrl.search = "";
-  manifestUrl.hash = "";
-  const configId = encodeConfig({ catalogIds: ALL_COLLECTION_IDS.filter((id) => initialSelectedIds.includes(id)) });
-  manifestUrl.pathname = `/${configId}/manifest.json`;
+  const config = {
+    ...rawConfig,
+    catalogIds: ALL_COLLECTION_IDS.filter((id) => initialSelectedIds.includes(id)),
+  };
+
+  const configId = encodeConfig(config);
+  const { origin } = new URL(c.req.url);
 
   const configureProps: ConfigureProps = {
-    initialSelectedIds,
-    manifestUrl: manifestUrl.toString(),
+    config,
+    manifestUrl: `${origin}/${configId}/manifest.json`,
   };
 
   return c.render(

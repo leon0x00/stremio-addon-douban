@@ -2,6 +2,7 @@ import type { AddonBuilder, MetaPreview } from "@stremio-addon/sdk";
 import { type Env, Hono } from "hono";
 import { api } from "@/libs/api";
 import { collectionConfigMap, generateId } from "@/libs/catalog";
+import { decodeConfig } from "@/libs/config";
 import { SECONDS_PER_DAY, SECONDS_PER_WEEK } from "@/libs/constants";
 import { getExtraFactory, matchResourceRoute } from "@/libs/router";
 import { isForwardUserAgent } from "@/libs/utils";
@@ -16,6 +17,9 @@ catalogRoute.get("*", async (c) => {
   if (!matched || !collectionConfigMap.has(params.id)) {
     return c.notFound();
   }
+
+  const config = decodeConfig(params.config);
+  console.log("config", config);
 
   const getExtra = getExtraFactory(c, params.extra);
 
@@ -83,6 +87,11 @@ catalogRoute.get("*", async (c) => {
       background: item.photos?.[0],
       links: [{ name: `豆瓣评分：${item.rating?.value ?? "N/A"}`, category: "douban", url: item.url ?? "" }],
     };
+    if (config.imageProxy === "weserv" && result.poster) {
+      const url = new URL("https://images.weserv.nl");
+      url.searchParams.set("url", result.poster);
+      result.poster = url.toString();
+    }
     if (imdbId) {
       result.imdb_id = imdbId;
     }

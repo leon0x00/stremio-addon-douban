@@ -1,4 +1,4 @@
-import { Check, Copy, Film, Tv } from "lucide-react";
+import { Check, Copy, Film, Settings, Tv } from "lucide-react";
 import { type FC, Fragment, useCallback, useState } from "react";
 import {
   Item,
@@ -11,12 +11,15 @@ import {
 } from "@/components/ui/item";
 import { Switch } from "@/components/ui/switch";
 import { COLLECTION_CONFIGS } from "@/libs/catalog-shared";
+import type { Config } from "@/libs/config";
+import { SettingSection } from "./setting-section";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "./ui/input-group";
+import { NativeSelect, NativeSelectOption } from "./ui/native-select";
 
 export interface ConfigureProps {
-  initialSelectedIds: string[];
+  config: Config;
   manifestUrl: string;
 }
 
@@ -24,8 +27,9 @@ export interface ConfigureProps {
 const movieConfigs = COLLECTION_CONFIGS.filter((c) => c.type === "movie");
 const seriesConfigs = COLLECTION_CONFIGS.filter((c) => c.type === "series");
 
-export const Configure: FC<ConfigureProps> = ({ initialSelectedIds, manifestUrl }) => {
-  const [selectedIds, setSelectedIds] = useState<string[]>(initialSelectedIds);
+export const Configure: FC<ConfigureProps> = ({ config, manifestUrl }) => {
+  const [selectedIds, setSelectedIds] = useState<string[]>(config.catalogIds);
+  const [imageProxy, setImageProxy] = useState(config.imageProxy);
   const [isCopied, setIsCopied] = useState(false);
 
   const copyToClipboard = useCallback(async (text: string) => {
@@ -69,30 +73,54 @@ export const Configure: FC<ConfigureProps> = ({ initialSelectedIds, manifestUrl 
     <form method="post" className="flex h-full flex-col">
       {/* 中间：可滚动的列表 */}
       <div className="relative flex-1 overflow-hidden">
-        <div className="h-full overflow-y-auto px-4 pb-4">
+        <div className="h-full space-y-4 overflow-y-auto px-4 pb-4">
+          <SettingSection title="通用" icon={<Settings className="size-4 text-muted-foreground" />}>
+            <ItemGroup className="rounded-lg border">
+              <Item size="sm">
+                <ItemContent>
+                  <ItemTitle>图片代理</ItemTitle>
+                  <ItemDescription>选择图片代理服务</ItemDescription>
+                </ItemContent>
+                <ItemActions>
+                  <NativeSelect
+                    name="imageProxy"
+                    value={imageProxy}
+                    size="sm"
+                    onChange={(e) => setImageProxy(e.target.value as Config["imageProxy"])}
+                  >
+                    <NativeSelectOption value="none">不使用代理</NativeSelectOption>
+                    <NativeSelectOption value="weserv">Weserv</NativeSelectOption>
+                  </NativeSelect>
+                </ItemActions>
+              </Item>
+            </ItemGroup>
+          </SettingSection>
+
           {/* 电影分类 */}
-          <div className="mb-4">
-            <div className="sticky top-0 z-10 flex items-center gap-2 bg-background/95 py-2 backdrop-blur-sm">
-              <Film className="size-4 text-muted-foreground" />
-              <span className="font-medium text-sm">电影</span>
+          <SettingSection
+            title="电影"
+            icon={<Film className="size-4 text-muted-foreground" />}
+            extra={
               <Badge variant="outline" className="ml-auto">
                 {movieConfigs.filter((c) => selectedIds.includes(c.id)).length}/{movieConfigs.length}
               </Badge>
-            </div>
+            }
+          >
             <ItemGroup className="rounded-lg border">{renderItems(movieConfigs)}</ItemGroup>
-          </div>
+          </SettingSection>
 
           {/* 剧集分类 */}
-          <div>
-            <div className="sticky top-0 z-10 flex items-center gap-2 bg-background/95 py-2 backdrop-blur-sm">
-              <Tv className="size-4 text-muted-foreground" />
-              <span className="font-medium text-sm">剧集</span>
+          <SettingSection
+            title="剧集"
+            icon={<Tv className="size-4 text-muted-foreground" />}
+            extra={
               <Badge variant="outline" className="ml-auto">
                 {seriesConfigs.filter((c) => selectedIds.includes(c.id)).length}/{seriesConfigs.length}
               </Badge>
-            </div>
+            }
+          >
             <ItemGroup className="rounded-lg border">{renderItems(seriesConfigs)}</ItemGroup>
-          </div>
+          </SettingSection>
         </div>
 
         {/* 底部渐变遮罩 */}
