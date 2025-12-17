@@ -103,6 +103,7 @@ export class DoubanAPI extends BaseAPI {
         count: DoubanAPI.PAGE_SIZE,
       },
       cache: {
+        type: CacheType.KV | CacheType.LOCAL,
         key: `subject_collection:${collectionId}:${skip}`,
         ttl: SECONDS_PER_HOUR * 2,
       },
@@ -114,9 +115,9 @@ export class DoubanAPI extends BaseAPI {
     const resp = await this.request({
       url: `/subject/${subjectId}`,
       cache: {
+        type: CacheType.KV | CacheType.LOCAL,
         key: `subject_detail:${subjectId}`,
         ttl: SECONDS_PER_DAY,
-        type: CacheType.KV | CacheType.LOCAL,
       },
     });
     return doubanSubjectDetailSchema.parse(resp);
