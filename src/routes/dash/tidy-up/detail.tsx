@@ -68,6 +68,11 @@ tidyUpDetailRoute.get("/:doubanId", async (c) => {
 
   const traktResults = await api.traktAPI.search(subject.type === "tv" ? "show" : "movie", subject.title);
 
+  if (tmdbResults?.results?.length === 1) {
+    const resp = await api.traktAPI.searchByTmdbId(tmdbResults.results[0].id.toString());
+    traktResults.push(...resp);
+  }
+
   return c.render(
     <div className="min-h-screen bg-linear-to-br from-zinc-50 via-white to-zinc-100 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">

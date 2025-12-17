@@ -76,4 +76,12 @@ export class TraktAPI extends BaseAPI {
     });
     return z.array(searchResultResponseSchemaWithEpisode).parse(resp);
   }
+
+  async searchByTmdbId(tmdbId: string) {
+    const resp = await this.request<SearchResultResponse[]>({
+      url: `/search/tmdb/${tmdbId}`,
+      cache: { key: `trakt:search:tmdb:${tmdbId}`, ttl: SECONDS_PER_DAY },
+    });
+    return z.array(searchResultResponseSchemaWithEpisode).parse(resp);
+  }
 }
