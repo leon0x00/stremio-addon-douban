@@ -1,4 +1,5 @@
 import { eq } from "drizzle-orm";
+import { uniqBy } from "es-toolkit";
 import { type Env, Hono } from "hono";
 import { ArrowLeft, Check, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -66,7 +67,7 @@ tidyUpDetailRoute.get("/:doubanId", async (c) => {
 
   const doubanCoverUrl = subject.cover_url || subject.pic?.large || subject.pic?.normal || "";
 
-  const traktResults = await api.traktAPI.search(subject.type === "tv" ? "show" : "movie", subject.title);
+  let traktResults = await api.traktAPI.search(subject.type === "tv" ? "show" : "movie", subject.title);
 
   if (tmdbResults?.results?.length === 1) {
     const resp = await api.traktAPI.searchByTmdbId(tmdbResults.results[0].id.toString());
@@ -92,6 +93,8 @@ tidyUpDetailRoute.get("/:doubanId", async (c) => {
     const traktSearchResp = await api.traktAPI.searchByImdbId(idMapping.imdbId);
     traktResults.push(...traktSearchResp);
   }
+
+  traktResults = uniqBy(traktResults, (item) => api.traktAPI.getSearchResultField(item, "ids")?.trakt);
 
   return c.render(
     <div className="min-h-screen bg-linear-to-br from-zinc-50 via-white to-zinc-100 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950">

@@ -22,6 +22,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.44.7",
+    "es-toolkit": "^1.43.0",
     "hono": "^4.11.0",
     "lucide-react": "^0.561.0",
     "p-limit": "^7.2.0",
