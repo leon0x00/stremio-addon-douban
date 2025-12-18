@@ -73,6 +73,11 @@ tidyUpDetailRoute.get("/:doubanId", async (c) => {
     traktResults.push(...resp);
   }
 
+  if (idMapping.tmdbId) {
+    const resp = await api.traktAPI.searchByTmdbId(idMapping.tmdbId.toString());
+    traktResults.push(...resp);
+  }
+
   if (idMapping.imdbId) {
     const resp = await api.tmdbAPI.findById(idMapping.imdbId, "imdb_id");
     if (resp.movie_results.length > 0) {
@@ -84,6 +89,8 @@ tidyUpDetailRoute.get("/:doubanId", async (c) => {
     if (resp.tv_episode_results.length > 0) {
       tmdbResults?.results.push(...resp.tv_episode_results);
     }
+    const traktSearchResp = await api.traktAPI.searchByImdbId(idMapping.imdbId);
+    traktResults.push(...traktSearchResp);
   }
 
   return c.render(
