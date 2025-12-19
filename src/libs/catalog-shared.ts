@@ -47,6 +47,8 @@ export const COLLECTION_CONFIGS: Array<ManifestCatalog & { hasGenre?: boolean }>
   { id: "2014_movie_2", name: "豆瓣 2014 评分最高电影", type: "movie", hasGenre: true },
   // --
   { id: "tv_hot", name: "近期热门剧集", type: "series" },
+  { id: "tv_korean", name: "近期热门韩剧", type: "series" },
+  { id: "tv_american", name: "近期热门欧美剧", type: "series" },
   { id: "show_hot", name: "近期热门综艺节目", type: "series" },
   { id: "tv_animation", name: "近期热门动画", type: "series" },
   { id: "tv_real_time_hotest", name: "实时热门电视", type: "series" },
