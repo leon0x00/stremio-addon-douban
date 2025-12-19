@@ -18,13 +18,13 @@
     {
       "binding": "STREMIO_ADDON_DOUBAN",
       "database_name": "stremio-addon-douban",
-      "database_id": "543ed1d5-3da8-4ed1-8084-25084af52953",
+      "database_id": "56f3b4d4-f00a-458f-93a7-2cd0dcd03e2a",
       "remote": true
     }
   ],
   "kv_namespaces": [{
     "binding": "KV",
-    "id": "8274189206e84436bf11f861debd918a"
+    "id": "36a4ae71524446c5b8fdbb49dd781b5c"
   }],
   "ratelimits": [
     {
