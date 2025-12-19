@@ -3,6 +3,7 @@ import { type Env, Hono } from "hono";
 import pkg from "@/../package.json" with { type: "json" };
 import { getCatalogs } from "@/libs/catalog";
 import { type Config, decodeConfig, encodeConfig } from "@/libs/config";
+import { idPrefixes } from "./meta";
 
 export const manifestRoute = new Hono<Env>();
 
@@ -24,8 +25,9 @@ manifestRoute.get("/", async (c) => {
     description: pkg.description,
     logo: "https://img1.doubanio.com/f/frodo/144e6fb7d96701944e7dbb1a9bad51bdb1debe29/pics/app/logo.png",
     types: ["movie", "series"],
-    resources: ["catalog"],
+    resources: ["catalog", "meta"],
     catalogs,
+    idPrefixes,
     behaviorHints: {
       configurable: true,
     },

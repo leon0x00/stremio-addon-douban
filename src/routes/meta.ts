@@ -1,14 +1,15 @@
 import type { MetaDetail, WithCache } from "@stremio-addon/sdk";
-import { eq, type SQL } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { type Env, Hono } from "hono";
 import { doubanMapping } from "@/db";
 import { api } from "@/libs/api";
+import { decodeConfig } from "@/libs/config";
 import { matchResourceRoute } from "@/libs/router";
-import { isForwardUserAgent } from "@/libs/utils";
+import { generateImageUrl, isForwardUserAgent } from "@/libs/utils";
 
 export const metaRoute = new Hono<Env>();
 
-export const idPrefixes = ["tt", "tmdb:", "douban:"];
+export const idPrefixes = ["douban:"];
 const idPrefixRegex = new RegExp(`^(${idPrefixes.join("|")})`);
 
 metaRoute.get("*", async (c) => {
@@ -21,51 +22,32 @@ metaRoute.get("*", async (c) => {
     return c.notFound();
   }
 
-  let doubanId: string | number | undefined;
-  let imdbId: string | undefined | null;
-  let tmdbId: string | number | undefined | null;
-  let queryCondition: SQL<unknown> | undefined;
-
+  let doubanId: number | undefined;
   if (metaId.startsWith("douban:")) {
     doubanId = Number.parseInt(metaId.split(":")[1], 10);
-    queryCondition = eq(doubanMapping.doubanId, doubanId);
-  } else if (metaId.startsWith("tt")) {
-    imdbId = metaId;
-    queryCondition = eq(doubanMapping.imdbId, imdbId);
-  } else if (metaId.startsWith("tmdb:")) {
-    tmdbId = Number.parseInt(metaId.split(":")[1], 10);
-    queryCondition = eq(doubanMapping.tmdbId, tmdbId);
   }
-
-  if (queryCondition) {
-    const [row] = await api.db.select().from(doubanMapping).where(queryCondition);
-    if (row) {
-      doubanId ||= row.doubanId;
-      imdbId ||= row.imdbId;
-      tmdbId ||= row.tmdbId;
-    }
-  }
-
-  if (!doubanId && imdbId) {
-    try {
-      doubanId = await api.doubanAPI.getIdByImdbId(imdbId);
-    } catch (error) {}
-  }
-
   if (!doubanId) {
     return c.notFound();
   }
+  const config = decodeConfig(params.config);
+
   const data = await api.doubanAPI.getSubjectDetail(doubanId);
   const meta: MetaDetail & { [key: string]: any } = {
     id: metaId,
     type: data.type === "tv" ? "series" : "movie",
     name: data.title,
-    poster: data.cover_url || data.pic?.large || data.pic?.normal || "",
+    poster: generateImageUrl(data.cover_url || data.pic?.large || data.pic?.normal || "", config.imageProxy),
     description: data.intro ?? undefined,
     genres: data.genres ?? undefined,
     links: [
-      ...(data.directors ?? []).map((item) => ({ name: item.name, category: "director", url: "" })),
-      ...(data.actors ?? []).map((item) => ({ name: item.name, category: "actor", url: "" })),
+      { name: `豆瓣评分：${data.rating?.value ?? "N/A"}`, category: "douban", url: data.url ?? "" },
+      ...data.linewatches.map((item) => ({
+        name: item.source.name,
+        category: "linewatches",
+        url: item.source_uri ?? "",
+      })),
+      ...(data.directors ?? []).map((item) => ({ name: item.name, category: "director", url: "#" })),
+      ...(data.actors ?? []).map((item) => ({ name: item.name, category: "actor", url: "#" })),
     ],
     language: data.languages?.join(" / "),
     country: data.countries?.join(" / "),
@@ -73,17 +55,20 @@ metaRoute.get("*", async (c) => {
   };
   meta.behaviorHints ||= {};
   const isInForward = isForwardUserAgent(c);
-  if (tmdbId) {
+
+  const dbData = await api.db.query.doubanMapping.findFirst({ where: eq(doubanMapping.doubanId, doubanId) });
+
+  if (dbData?.tmdbId) {
     if (isInForward) {
-      meta.tmdb_id = `tmdb:${tmdbId}`;
+      meta.tmdb_id = `tmdb:${dbData.tmdbId}`;
     } else {
-      meta.tmdbId = tmdbId;
+      meta.tmdbId = dbData.tmdbId;
     }
-    meta.behaviorHints.defaultVideoId = `tmdb:${tmdbId}`;
+    meta.behaviorHints.defaultVideoId = `tmdb:${dbData.tmdbId}`;
   }
-  if (imdbId) {
-    meta.imdb_id = imdbId;
-    meta.behaviorHints.defaultVideoId = imdbId;
+  if (dbData?.imdbId) {
+    meta.imdb_id = dbData.imdbId;
+    meta.behaviorHints.defaultVideoId = dbData.imdbId;
   }
 
   return c.json({

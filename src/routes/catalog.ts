@@ -1,7 +1,6 @@
 import type { AddonBuilder, MetaPreview } from "@stremio-addon/sdk";
 import { type Env, Hono } from "hono";
 import { api } from "@/libs/api";
-import { generateId } from "@/libs/catalog";
 import { decodeConfig } from "@/libs/config";
 import { SECONDS_PER_DAY, SECONDS_PER_WEEK } from "@/libs/constants";
 import { getExtraFactory, matchResourceRoute } from "@/libs/router";
@@ -17,7 +16,6 @@ catalogRoute.get("*", async (c) => {
   if (!matched) {
     return c.notFound();
   }
-
   const config = decodeConfig(params.config);
 
   const getExtra = getExtraFactory(c, params.extra);
@@ -78,7 +76,7 @@ catalogRoute.get("*", async (c) => {
     const mapping = mappingCache.get(item.id);
     const { imdbId, tmdbId } = mapping ?? {};
     const result: MetaPreview & { [key: string]: any } = {
-      id: generateId(item.id, mapping),
+      id: `douban:${item.id}`,
       name: item.title,
       type: item.type === "tv" ? "series" : "movie",
       poster: generateImageUrl(item.cover ?? "", config.imageProxy),

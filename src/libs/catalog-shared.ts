@@ -94,13 +94,3 @@ export const DEFAULT_COLLECTION_IDS = [
   "show_chinese_best_weekly",
   "show_global_best_weekly",
 ];
-
-export const generateId = (doubanId: number, params?: Partial<Omit<DoubanIdMapping, "doubanId">>) => {
-  if (params?.tmdbId) {
-    return `tmdb:${params.tmdbId}`;
-  }
-  if (params?.imdbId) {
-    return params.imdbId;
-  }
-  return `douban:${doubanId}`;
-};
