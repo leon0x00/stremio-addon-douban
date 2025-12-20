@@ -1,5 +1,4 @@
 import type { ManifestCatalog } from "@stremio-addon/sdk";
-import type { DoubanIdMapping } from "@/db";
 
 export const COLLECTION_CONFIGS: Array<ManifestCatalog & { hasGenre?: boolean }> = [
   { id: "movie_hot_gaia", name: "豆瓣热门电影", type: "movie" },
@@ -47,8 +46,13 @@ export const COLLECTION_CONFIGS: Array<ManifestCatalog & { hasGenre?: boolean }>
   { id: "2014_movie_2", name: "豆瓣 2014 评分最高电影", type: "movie", hasGenre: true },
   // --
   { id: "tv_hot", name: "近期热门剧集", type: "series" },
-  { id: "show_hot", name: "近期热门综艺节目", type: "series" },
+  { id: "tv_american", name: "近期热门美剧", type: "series" },
+  { id: "tv_korean", name: "近期热门韩剧", type: "series" },
+  { id: "tv_domestic", name: "近期热门国产剧", type: "series" },
+  { id: "tv_japanese", name: "近期热门日剧", type: "series" },
   { id: "tv_animation", name: "近期热门动画", type: "series" },
+  { id: "show_hot", name: "近期热门综艺节目", type: "series" },
+  { id: "tv_documentary", name: "近期热门纪录片", type: "series" },
   { id: "tv_real_time_hotest", name: "实时热门电视", type: "series" },
   { id: "tv_chinese_best_weekly", name: "华语口碑剧集榜", type: "series" },
   { id: "tv_global_best_weekly", name: "全球口碑剧集榜", type: "series" },
