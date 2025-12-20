@@ -4,8 +4,8 @@ const tmdbImageSchema = z.string().transform((v) => (v ? `https://image.tmdb.org
 
 const tmdbSearchResultItemBaseSchema = z.object({
   id: z.int(),
-  backdrop_path: tmdbImageSchema,
-  poster_path: tmdbImageSchema,
+  backdrop_path: tmdbImageSchema.nullish(),
+  poster_path: tmdbImageSchema.nullish(),
 });
 
 export const tmdbSearchResultItemSchema = z

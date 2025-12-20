@@ -39,4 +39,11 @@ export class TmdbAPI extends BaseAPI {
     });
     return tmdbFindResultSchema.parse(resp);
   }
+
+  getExternalId(type: "movie" | "tv", id: number) {
+    return this.request<{
+      id: number;
+      imdb_id: string;
+    }>({ url: `/${type}/${id}/external_ids` });
+  }
 }
