@@ -120,20 +120,9 @@ configureRoute.get("/", async (c) => {
               <h1 className="text-balance font-bold text-xl tracking-tight">{pkg.description}</h1>
               <p className="text-muted-foreground text-sm">选择要显示的目录，生成你的专属配置</p>
             </div>
-            <div className="flex items-center gap-1">
-              {user ? (
-                <div id="user-menu" />
-              ) : (
-                <Button variant="outline" size="sm" asChild>
-                  <a href="/auth/github">
-                    <Github className="size-4" />
-                    <span>登录</span>
-                  </a>
-                </Button>
-              )}
-            </div>
+            {!!user && <div id="user-menu" />}
           </div>
-          {user && !user.hasStarred && <div id="star-banner" />}
+          {!user?.hasStarred && <div id="star-banner" />}
         </header>
 
         <script
