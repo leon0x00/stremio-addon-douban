@@ -81,13 +81,13 @@ tidyUpDetailRoute.get("/:doubanId", async (c) => {
 
   if (idMapping.imdbId) {
     const resp = await api.tmdbAPI.findById(idMapping.imdbId, "imdb_id");
-    if (resp.movie_results.length > 0) {
+    if (subject.type === "movie" && resp.movie_results.length > 0) {
       tmdbResults?.results.push(...resp.movie_results);
     }
-    if (resp.tv_results.length > 0) {
+    if (subject.type === "tv" && resp.tv_results.length > 0) {
       tmdbResults?.results.push(...resp.tv_results);
     }
-    if (resp.tv_episode_results.length > 0) {
+    if (subject.type === "tv" && resp.tv_episode_results.length > 0) {
       tmdbResults?.results.push(...resp.tv_episode_results);
     }
     const traktSearchResp = await api.traktAPI.searchByImdbId(idMapping.imdbId);
@@ -95,6 +95,21 @@ tidyUpDetailRoute.get("/:doubanId", async (c) => {
   }
 
   traktResults = uniqBy(traktResults, (item) => api.traktAPI.getSearchResultField(item, "ids")?.trakt);
+
+  if (tmdbResults?.results?.length) {
+    tmdbResults.results = uniqBy(tmdbResults.results, (item) => item.id);
+    try {
+      tmdbResults.results = await Promise.all(
+        tmdbResults.results.map(async (item) => {
+          const resp = await api.tmdbAPI.getExternalId(subject.type, item.id);
+          return {
+            ...item,
+            imdb_id: resp.imdb_id,
+          };
+        }),
+      );
+    } catch {}
+  }
 
   return c.render(
     <div className="min-h-screen bg-linear-to-br from-zinc-50 via-white to-zinc-100 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950">
@@ -302,6 +317,7 @@ tidyUpDetailRoute.get("/:doubanId", async (c) => {
                         <TableHead>TMDB ID</TableHead>
                         <TableHead>封面</TableHead>
                         <TableHead>标题</TableHead>
+                        <TableHead>IMDB ID</TableHead>
                         <TableHead>操作</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -312,7 +328,7 @@ tidyUpDetailRoute.get("/:doubanId", async (c) => {
                           className="cursor-pointer"
                           data-fill-row
                           data-tmdb={result.id}
-                          data-imdb=""
+                          data-imdb={(result as any).imdb_id}
                           data-trakt=""
                         >
                           <TableCell>
@@ -333,6 +349,18 @@ tidyUpDetailRoute.get("/:doubanId", async (c) => {
                             <span className="font-medium">{result.title}</span>
                             {result.title !== result.original_title && result.original_title && (
                               <span className="ml-2 text-muted-foreground text-xs">({result.original_title})</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {"imdb_id" in result ? (
+                              <Badge
+                                variant="outline"
+                                className="border-emerald-500/50 bg-emerald-500/10 text-emerald-600"
+                              >
+                                {(result as any).imdb_id}
+                              </Badge>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
                             )}
                           </TableCell>
                           <TableCell>
