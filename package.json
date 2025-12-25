@@ -1,7 +1,7 @@
 {
   "name": "stremio-addon-douban",
   "displayName": "Douban",
-  "description": "Douban addon for Stremio",
+  "description": "Stremio addon for Douban",
   "type": "module",
   "version": "1.0.0",
   "scripts": {

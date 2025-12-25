@@ -15,12 +15,7 @@ import {
 import { Toaster } from "@/components/ui/sonner";
 import { Switch } from "@/components/ui/switch";
 import type { User } from "@/db";
-import {
-  COLLECTION_CONFIGS,
-  isYearlyRankingId,
-  MOVIE_YEARLY_RANKING_ID,
-  TV_YEARLY_RANKING_ID,
-} from "@/libs/catalog-shared";
+import { COLLECTION_CONFIGS, isYearlyRankingId } from "@/libs/catalog-shared";
 import type { Config } from "@/libs/config";
 import type { ConfigureRoute } from "@/routes/configure";
 import { SettingSection } from "./setting-section";

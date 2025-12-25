@@ -1,4 +1,4 @@
-# Stremio Douban Addon
+# Stremio addon for Douban
 
 为 Stremio 提供豆瓣电影/剧集目录的插件。
 
