@@ -1,26 +1,32 @@
 import { reactRenderer } from "@hono/react-renderer";
 import { zValidator } from "@hono/zod-validator";
 import { type Env, Hono } from "hono";
-import { getCookie, setCookie } from "hono/cookie";
+import { getCookie } from "hono/cookie";
 import { Github, Heart } from "lucide-react";
 import { Link, Script, ViteClient } from "vite-ssr-components/react";
 import pkg from "@/../package.json" with { type: "json" };
 import { Configure, type ConfigureProps } from "@/components/configure";
-import { COLLECTION_CONFIGS, DEFAULT_COLLECTION_IDS } from "@/libs/collections";
+import { DEFAULT_COLLECTION_IDS } from "@/libs/collections";
 import { configSchema, decodeConfig, encodeConfig, getConfig, isUserId, saveUserConfig } from "@/libs/config";
 
-export const configureRoute = new Hono<Env>().put("/", zValidator("json", configSchema), async (c) => {
+export const configureRoute = new Hono<Env>().post("/", zValidator("json", configSchema), async (c) => {
   const config = c.req.valid("json");
   const user = c.get("user");
-  if (!user) {
-    return c.json({ success: false, message: "请登录" });
-  }
-  if (!user.hasStarred) {
-    return c.json({ success: false, message: "请星标本项目" });
+  const { origin } = new URL(c.req.url);
+
+  let manifestUrl: string;
+
+  if (user?.hasStarred) {
+    // 已登录且已 Star 用户：保存到数据库
+    await saveUserConfig(c, user.id, config);
+    manifestUrl = `${origin}/${user.id}/manifest.json`;
+  } else {
+    // 未登录或未 Star 用户：编码配置到 URL
+    const encodedConfig = encodeConfig({ ...config, fanart: { enabled: false } });
+    manifestUrl = `${origin}/${encodedConfig}/manifest.json`;
   }
 
-  await saveUserConfig(c, user.id, config);
-  return c.json({ success: true });
+  return c.json({ success: true, manifestUrl });
 });
 
 export type ConfigureRoute = typeof configureRoute;
@@ -45,27 +51,6 @@ configureRoute.get(
     );
   }),
 );
-
-// POST 处理配置保存
-configureRoute.post("/", async (c) => {
-  const formData = await c.req.formData();
-  const catalogIds = formData.get("catalogIds")?.toString().split(",").filter(Boolean) ?? [];
-  const imageProxy = formData.get("imageProxy")?.toString() ?? "none";
-  const dynamicCollections = formData.get("dynamicCollections")?.toString() === "on";
-
-  const user = c.get("user");
-
-  // 如果用户已登录且已 Star，保存到数据库
-  if (user?.hasStarred) {
-    await saveUserConfig(c, user.id, { catalogIds, imageProxy, dynamicCollections });
-    return c.redirect(`/${user.id}/configure`);
-  }
-
-  // 未登录或未 Star 用户使用传统方式（不包含 fanart 配置）
-  const config = encodeConfig({ catalogIds, imageProxy, dynamicCollections, fanart: { enabled: false } });
-  setCookie(c, "config", config);
-  return c.redirect(`/${config}/configure`);
-});
 
 // GET 显示配置页面
 configureRoute.get("/", async (c) => {
