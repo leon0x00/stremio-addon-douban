@@ -105,7 +105,7 @@ catalogRoute.get("*", async (c) => {
         }
         const images = await fanartApi.getSubjectImages(item.type, searchId);
         if (images) {
-          result.poster = images.poster;
+          result.poster = images.poster || result.poster;
           result.background = images.background;
           result.logo = images.logo;
         }
