@@ -6,7 +6,6 @@ import { Github, Heart } from "lucide-react";
 import { Link, Script, ViteClient } from "vite-ssr-components/react";
 import pkg from "@/../package.json" with { type: "json" };
 import { Configure, type ConfigureProps } from "@/components/configure";
-import { Button } from "@/components/ui/button";
 import { ALL_COLLECTION_IDS, DEFAULT_COLLECTION_IDS } from "@/libs/catalog";
 import { configSchema, decodeConfig, encodeConfig, getConfig, isUserId } from "@/libs/config";
 import { saveUserConfig } from "@/libs/session";

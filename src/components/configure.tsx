@@ -229,7 +229,7 @@ export const Configure: FC<ConfigureProps> = ({ config: initialConfig, manifestU
                       <ItemSeparator />
                       <Item size="sm">
                         <ItemContent className="flex-1">
-                          <ItemTitle>Fanart API 密钥</ItemTitle>
+                          <ItemTitle>Fanart API 密钥（可选）</ItemTitle>
                           <ItemDescription>
                             如果未提供个人 API 密钥，Fanart 将仅返回 7 天前过审的图片。如果提供个人 API 密钥，Fanart
                             将返回 48小时前过审的图片。如果您是 VIP 会员，Fanart 将返回 10 分钟前过审的图片。
