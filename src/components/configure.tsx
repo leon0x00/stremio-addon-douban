@@ -233,7 +233,11 @@ export const Configure: FC<ConfigureProps> = ({ config: initialConfig, manifestU
                           <ItemDescription>
                             如果未提供个人 API 密钥，Fanart 将仅返回 7 天前过审的图片。如果提供个人 API 密钥，Fanart
                             将返回 48小时前过审的图片。如果您是 VIP 会员，Fanart 将返回 10 分钟前过审的图片。
-                            <a href="https://fanart.tv/2015/01/personal-api-keys" target="_blank" rel="noreferrer">
+                            <a
+                              href="https://api.fanart.tv/#section/Fanart.tv-API-Documentation/Access-Tiers"
+                              target="_blank"
+                              rel="noreferrer"
+                            >
                               了解更多
                             </a>
                           </ItemDescription>
