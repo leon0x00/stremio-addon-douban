@@ -104,7 +104,7 @@ export const Configure: FC<ConfigureProps> = ({ config: initialConfig, manifestU
         {/* 中间：可滚动的列表 */}
         <div className="relative flex-1 overflow-hidden">
           <div className="h-full space-y-4 overflow-y-auto pb-4">
-            <div className="page-container px-4">
+            <div className="page-container space-y-4 px-4">
               <SettingSection title="通用" icon={<Settings className="size-4 text-muted-foreground" />}>
                 <ItemGroup className="rounded-lg border">
                   {/* 图片代理 */}
