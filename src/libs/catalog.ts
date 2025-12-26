@@ -50,6 +50,7 @@ export const getCatalogs = async (config: Config) => {
   }
 
   for (const catalogId of catalogIdsSet) {
+    let collectionId = catalogId;
     const item = catalogMap.get(catalogId);
     if (!item) {
       continue;
@@ -60,12 +61,16 @@ export const getCatalogs = async (config: Config) => {
           ...item,
         };
         if (isYearlyRankingId(item.id)) {
-          result.name = getLatestYearlyRanking(item.id)?.name ?? result.name;
+          const latest = getLatestYearlyRanking(item.id);
+          if (latest) {
+            result.name = latest.name;
+            collectionId = latest.id;
+          }
         }
         result.extra ||= [];
         result.extra.push({ name: "skip" });
         if (item.hasGenre) {
-          const info = await api.doubanAPI.getSubjectCollectionCategory(catalogId).catch(() => null);
+          const info = await api.doubanAPI.getSubjectCollectionCategory(collectionId).catch(() => null);
           const categoryItems = info?.items ?? [];
           if (categoryItems.length > 1) {
             result.extra.push({ name: "genre", options: categoryItems.map((item) => item.name), optionsLimit: 1 });
