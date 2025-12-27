@@ -63,7 +63,7 @@ export class TmdbAPI extends BaseAPI {
     const resp = await this.request({
       url: `/${type}/${id}/images`,
       params: {
-        include_image_language: ["zh", "en", "null"].join(","),
+        include_image_language: ["zh", "en", "ja", "ko", "null"].join(","),
       },
       cache: {
         key: `tmdb:${type}:${id}:images`,
