@@ -65,6 +65,12 @@ export const YEARLY_RANKINGS = {
   [TV_YEARLY_RANKING_ID]: TV_YEARLY_RANKING,
 } as const satisfies Record<string, YearlyRankingItem[]>;
 
+/** 所有年度榜单项的配置（展平后的 CollectionConfig 格式） */
+export const YEARLY_RANKING_CONFIGS: CollectionConfig[] = [
+  ...MOVIE_YEARLY_RANKING.map<CollectionConfig>((item) => ({ ...item, type: "movie", hasGenre: false })),
+  ...TV_YEARLY_RANKING.map<CollectionConfig>((item) => ({ ...item, type: "series", hasGenre: false })),
+];
+
 //#endregion
 
 //#region 类型榜单
